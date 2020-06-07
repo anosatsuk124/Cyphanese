@@ -1,4 +1,4 @@
-module Lib 
+module Lib
     ( someFunc
     ) where
 
@@ -131,6 +131,7 @@ sentgen wordlist void
         | otherwise = sentgen (tail wordlist) ((head wordlist ++ " " ++ head void):init void)
 
 --ユーフォニー指数
+
 euphony :: Double -> Double -> Double -> Double -> Int -> Double
 euphony alpha beta gamma delta epsilon
         | epsilon == 2 = -0.04*(e0**2) + 1.4*e0
@@ -141,6 +142,10 @@ euphony alpha beta gamma delta epsilon
 euphony0 :: Double -> Double -> Double -> Double -> Int -> Double
 euphony0 alpha beta gamma delta epsilon = 0.5 * (1 + (1 / (1 + exp (0.5*alpha - 7)))) * (100 / (1 + exp (-2.26*alpha - 0.0693*beta + 0.0112*gamma + 0.388*delta - 11.9)))
 
+{-
+euphony :: Double -> Double -> Double -> Double -> Double
+euphony alpha beta gamma delta = 100/(1+exp(-( -0.001484*alpha+0.039190*beta-0.046390*gamma-0.014107*delta)))
+-}
 wordsize :: [String] -> [Int] -> [Int]
 wordsize wordlist void
     | length wordlist == 0 = void
@@ -208,10 +213,41 @@ epsilon0 word void1 void2
 epsilon :: [String] -> Int
 epsilon word = epsilon0 (delta0 word []) 0 []
 
-zeta0 :: String -> Int 
-zeta0 word
-    | (head word) == 'C' = 0
-    | otherwise = 1 --語頭に
+zeta0 :: String -> Int
+zeta0 syllable
+    | (head syllable) == 'C' = 1
+    | otherwise = 0 --  音節頭に子音が出現する割合
+
+zeta1 :: [String] -> Int -> Int
+zeta1 syllset void
+    | length syllset == 0 = void
+    | otherwise = zeta1 (tail syllset) (void + zeta0 (head syllset))
+
+zeta :: [String] -> Int --自動生成だけ
+zeta syllablelist
+    | fromIntegral (zeta1 syllablelist 0) / fromIntegral (length syllablelist) == 1 = 1
+    | otherwise = 0
+
+eta :: [String] -> Int --VCが表層形の音節構造か否か自動生成だけ
+eta syllablelist
+    | length syllablelist == 1 && (head syllablelist) == "VC" = 1
+    | otherwise = 0
+
+theta0 :: String -> [Int] -> [Int]
+theta0 preword void--母音クラスタの平均値
+    | length preword == 0 = void
+    | length void == 0 = theta0 preword (0:void)
+    | (head preword) == 'V' = theta0 (tail preword) (((head void)+1):(tail void))
+    | otherwise = theta0 (tail preword) (0:void)
+
+theta1 :: [String] -> [Int] -> [Int]
+theta1 prewordlist void
+    | length prewordlist == 0 = void
+    | otherwise = theta1 (tail prewordlist) (void ++ (theta0 (head prewordlist) []))
+
+theta :: [String] -> Double
+theta prewordlist = mean (map fromIntegral (theta1 prewordlist []))
+
 
 --自然言語処理
 natural :: String -> [String] -> [String] -> String -> String -> String
@@ -231,7 +267,7 @@ natural sentence vowels consonants void1 void2
     | otherwise = natural (tail sentence) vowels consonants "" (void2 ++ "?")
 
 naturallist :: String -> [String] -> [String] -> String -> [String] -> [String]
-naturallist sentence vowels consonants void1 void2 
+naturallist sentence vowels consonants void1 void2
     | length sentence == 0 = (void2 ++ (void1:[]))
     | elem ((head sentence):[]) vowels == True = naturallist (tail sentence) vowels consonants (void1 ++ ((head sentence):[])) void2
     | elem ((head sentence):[]) consonants == True = naturallist (tail sentence) vowels consonants (void1 ++ ((head sentence):[])) void2
@@ -279,12 +315,15 @@ euphonyindexgenerator1 path = do
     wordsets <- wordsets prewordsets vowels consonants []
     let sentence = sentgen wordsets []
     let alph = alpha prewordsets
-    let bet = 100 * (beta prewordsets)
-    let gam = 100 * (gamma wordsets prewordsets)
-    let del = 100 * (delta prewordsets)
+    let bet = beta prewordsets
+    let gam = gamma wordsets prewordsets
+    let del = delta prewordsets
     let ep = epsilon prewordsets
+    let zt = zeta sylsets
+    let et = eta sylsets
+    let thet = theta prewordsets
     let euphonyindex = euphony alph bet gam del ep
-    appendFile path (sentence ++ "\t" ++ (show euphonyindex) ++ "\t" ++ (show alph) ++ "\t" ++ (show bet) ++ "\t" ++ (show gam) ++ "\t" ++ (show del) ++ "\t" ++ (show ep) ++ "\t 0" ++ "\r\n")
+    appendFile path (sentence ++ "\t" ++ (show euphonyindex) ++ "\t" ++ (show alph) ++ "\t" ++ (show bet) ++ "\t" ++ (show gam) ++ "\t" ++ (show del) ++ "\t" ++ (show ep) ++ "\t" ++ (show zt) ++ (show et) ++ "\t" ++ (show thet) ++ "\t 0" ++ "\r\n")
 
 euphonyindexgenerator0 :: String -> String -> Int -> Int -> IO()
 euphonyindexgenerator0 header path x x2
@@ -297,7 +336,7 @@ euphonyindexgenerator0 header path x x2
         euphonyindexgenerator0 header path (x-1) x2
 
 euphonyindexgenerator :: String -> String -> Int -> IO()
-euphonyindexgenerator header path x = euphonyindexgenerator0 header path x x 
+euphonyindexgenerator header path x = euphonyindexgenerator0 header path x x
 
 ipaconIO :: IO [String]
 ipaconIO = do
@@ -314,23 +353,49 @@ ipaconIO = do
     let consonants = (L.words input) ++ (L.words input2) ++ (L.words input3) ++ (L.words input4) ++ (L.words input5) ++ (L.words input6) ++ (L.words input7) ++ (L.words input8) ++ (L.words input9) ++ (L.words input10)
     return consonants
 
+natgen :: [String] -> IO()
+natgen inp
+    | length inp == 0 = print "finish"
+    | otherwise = do
+        let input = (head inp)
+        input2 <- readFile("src/IPA-vowels/vowels-supply.txt")
+        input3 <- readFile("src/IPA-vowels/syllablic-consonants.txt")
+        input4 <- readFile("src/IPA-vowels/long-vowels.txt")
+        input5 <- ipaconIO
+        let vowel = (L.words input2) ++ (L.words input3) ++ (L.words input4)
+        let consonant = input5
+        let nat = natural input vowel consonant "" ""
+        let natwordset = naturallist input vowel consonant "" []
+        let pre = L.words nat
+        let alph = alpha pre
+        let bet = beta pre
+        let gam = gamma natwordset pre
+        let del = delta pre
+        let ep = epsilon pre
+        let thet = theta pre
+        let euphonyindex = euphony alph bet gam del ep
+        appendFile "asIPAnatural2.txt" (input ++ "\t" ++ (show euphonyindex) ++ "\t" ++ (show alph) ++ "\t" ++ (show bet) ++ "\t" ++ (show gam) ++ "\t" ++ (show del) ++ "\t" ++ (show ep) ++ "\t 0" ++ "\t 0" ++ (show thet) ++ "\t 1" ++ "\r\n")
+        natgen (tail inp)
+
 someFunc :: IO()
 someFunc = do
     hSetBinaryMode stdout True
     hSetEncoding stdout utf8
-    --euphonyindexgenerator "" 1
-
+    --euphonyindexgenerator "sentence \t E \t alpha \t beta \t gamma \t delta \t epsilon \t zeta \t eta \t theta \t natorcong \r\n" "asIPA2.txt" 200
+    langset <- readFile("languageset.txt")
+    natgen (lines langset)
+    {-
     putStrLn "文: "
     input <- getLine
     input2 <- readFile("src/IPA-vowels/vowels-supply.txt")
     input3 <- readFile("src/IPA-vowels/syllablic-consonants.txt")
     input4 <- readFile("src/IPA-vowels/long-vowels.txt")
-    input5 <- ipaconIO 
+    input5 <- ipaconIO
     let vowel = (L.words input2) ++ (L.words input3) ++ (L.words input4)
     let consonant = input5
     let nat = natural input vowel consonant "" ""
     let natwordset = naturallist input vowel consonant "" []
-    let pre = L.words nat 
+    let pre = L.words nat
     putStrLn "音節構造: "
     print pre
     putStrLn "ユーフォニー指数(Euphony Index;)"
@@ -353,7 +418,7 @@ someFunc = do
     let euphonyindex = euphony alph bet gam del ep
     --appendFile "asIPAnatural.txt" (input ++ "\t" ++ (show euphonyindex) ++ "\t" ++ (show alph) ++ "\t" ++ (show bet) ++ "\t" ++ (show gam) ++ "\t" ++ (show del) ++ "\t" ++ (show ep) ++ "\t 1" ++ "\r\n")
     print $ euphonyindex
-
+    -}
     {-
     input1 <- readFile("src/IPA-vowels/vowels.txt")
     input3 <- readFile("src/IPA-vowels/long-vowels.txt")
