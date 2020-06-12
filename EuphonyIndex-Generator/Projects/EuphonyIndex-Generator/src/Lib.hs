@@ -323,7 +323,7 @@ euphonyindexgenerator1 path = do
     let et = eta sylsets
     let thet = theta prewordsets
     let euphonyindex = euphony alph bet gam del ep
-    appendFile path (sentence ++ "\t" ++ (show euphonyindex) ++ "\t" ++ (show alph) ++ "\t" ++ (show bet) ++ "\t" ++ (show gam) ++ "\t" ++ (show del) ++ "\t" ++ (show ep) ++ "\t" ++ (show zt) ++ (show et) ++ "\t" ++ (show thet) ++ "\t 0" ++ "\r\n")
+    appendFile path (sentence ++ "\t" ++ (show euphonyindex) ++ "\t" ++ (show alph) ++ "\t" ++ (show bet) ++ "\t" ++ (show gam) ++ "\t" ++ (show del) ++ "\t" ++ (show ep) ++ "\t" ++ (show zt) ++ "\t" ++ (show et) ++ "\t" ++ (show thet) ++ "\t0" ++ "\r\n")
 
 euphonyindexgenerator0 :: String -> String -> Int -> Int -> IO()
 euphonyindexgenerator0 header path x x2
@@ -374,16 +374,16 @@ natgen inp
         let ep = epsilon pre
         let thet = theta pre
         let euphonyindex = euphony alph bet gam del ep
-        appendFile "asIPAnatural2.txt" (input ++ "\t" ++ (show euphonyindex) ++ "\t" ++ (show alph) ++ "\t" ++ (show bet) ++ "\t" ++ (show gam) ++ "\t" ++ (show del) ++ "\t" ++ (show ep) ++ "\t 0" ++ "\t 0" ++ (show thet) ++ "\t 1" ++ "\r\n")
+        appendFile "asIPAnatural2.txt" (input ++ "\t" ++ (show euphonyindex) ++ "\t" ++ (show alph) ++ "\t" ++ (show bet) ++ "\t" ++ (show gam) ++ "\t" ++ (show del) ++ "\t" ++ (show ep) ++ "\t0\t" ++ "\t0\t" ++ (show thet) ++ "\t1" ++ "\r\n")
         natgen (tail inp)
 
 someFunc :: IO()
 someFunc = do
     hSetBinaryMode stdout True
     hSetEncoding stdout utf8
-    --euphonyindexgenerator "sentence \t E \t alpha \t beta \t gamma \t delta \t epsilon \t zeta \t eta \t theta \t natorcong \r\n" "asIPA2.txt" 200
-    langset <- readFile("languageset.txt")
-    natgen (lines langset)
+    euphonyindexgenerator "" "asIPA2.txt" 200
+    {-langset <- readFile("languageset.txt")
+    natgen (lines langset)-}
     {-
     putStrLn "文: "
     input <- getLine
