@@ -15,15 +15,6 @@ randIO x y = randomRIO (x, y) :: IO Int
 fact 0 = 1
 fact n = fact(n-1) * n
 
-{- 死骸、いつかのために残す
-select :: Int -> Int -> [Int] -> IO [Int]
-select range randrange selects = do
-    rand <- randIO 0 randrange
-    case range of
-        0 -> return selects
-        otherwise -> select (range - 1) randrange (rand:selects)
--}
-
 --母音表
 
 vowels :: Int -> [String] -> [String] -> IO [String]
