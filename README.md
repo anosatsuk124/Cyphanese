@@ -8,7 +8,7 @@
 理論:[Article](./Cyphanese-Articles/document.pdf)
 
 Cyphanese
-Copyright (C) 2020 Viterum(Sstsuki Akiba).
+Copyright (C) 2020 Viterum(Satsuki Akiba).
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
