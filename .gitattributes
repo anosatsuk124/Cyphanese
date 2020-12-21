@@ -1,2 +1,3 @@
-Cyphanese-article/* linguist-vendored
-EuphonyIndex-Generator/Projects/Logistic-Regression/* linguist-vendored
+*.ipynb linguist-language=R
+*.pdf linguist-documentation
+*.html linguist-documentation
